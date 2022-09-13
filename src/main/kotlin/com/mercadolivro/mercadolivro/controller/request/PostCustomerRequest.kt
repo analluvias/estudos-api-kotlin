@@ -7,7 +7,4 @@ data class PostCustomerRequest (
 
         var email: String
 ){
-    fun toCustomerModel(): CustomerModel{
-        return CustomerModel(name = this.name, email = this.email)
-    }
 }

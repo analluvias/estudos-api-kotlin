@@ -2,6 +2,7 @@ package com.mercadolivro.mercadolivro.controller
 
 import com.mercadolivro.mercadolivro.controller.request.PostCustomerRequest
 import com.mercadolivro.mercadolivro.controller.request.PutCustomerRequest
+import com.mercadolivro.mercadolivro.extension.toCustomerModel
 import com.mercadolivro.mercadolivro.model.CustomerModel
 import com.mercadolivro.mercadolivro.service.CustomerService
 import org.springframework.beans.factory.annotation.Autowired
@@ -42,7 +43,7 @@ class CustomerController(
     fun update(@PathVariable("id") id: String,
                @RequestBody customer: PutCustomerRequest){
 
-        customerService.update(id, customer)
+        customerService.update(customer.toCustomerModel(id))
     }
 
     //deleta

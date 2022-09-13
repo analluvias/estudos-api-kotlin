@@ -1,6 +1,5 @@
 package com.mercadolivro.mercadolivro.service
 
-import com.mercadolivro.mercadolivro.controller.request.PutCustomerRequest
 import com.mercadolivro.mercadolivro.model.CustomerModel
 import org.springframework.stereotype.Service
 
@@ -36,6 +35,8 @@ class CustomerService {
             customers.last().id?.toInt()?.plus(1)
         }.toString()
 
+        customer.id = id
+
         customers.add(  customer  )
     }
 
@@ -50,10 +51,9 @@ class CustomerService {
 
 
     //faz update de todos os campos atualizaveis pelo id
-    fun update(id: String,
-               customer: PutCustomerRequest){
+    fun update(customer: CustomerModel){
 
-        customers.filter { it.id == id }.first().let {
+        customers.filter { it.id == customer.id }.first().let {
             it.name = customer.name
             it.email = customer.email
         }
