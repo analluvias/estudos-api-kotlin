@@ -26,7 +26,7 @@ class CustomerController(
     @PostMapping //caminho na raiz
     @ResponseStatus(HttpStatus.CREATED) //status de criado
     fun create(@RequestBody customer: PostCustomerRequest){
-        customerService.create(customer)
+        customerService.create(  customer.toCustomerModel()  )
     }
 
 
@@ -56,5 +56,9 @@ class CustomerController(
     /*
     COLLECTIONS DO POSTMAN - PERMITEM QUE EU JUNTE TODAS AS MINHAS REQUISIÇÕES EM UMA COLEÇÃO
     PARA QUE EU POSSA GUARDAR AS MINHAS REQUISIÇÕES PARA USAR MAIS TARDE
+     */
+
+    /*
+    PS. EH INTERESSANTE QUE OS NOSSOS SERVICES RECEBAM APENAS OS MODELS (OU ENTITIES), NÃO OS NOSSOS DTOS
      */
 }
