@@ -1,70 +1,78 @@
 package com.mercadolivro.mercadolivro.service
 
+import com.mercadolivro.mercadolivro.enums.CustomerStatus
+import com.mercadolivro.mercadolivro.enums.Errors
+import com.mercadolivro.mercadolivro.enums.Role
+import com.mercadolivro.mercadolivro.exception.NotFoundException
 import com.mercadolivro.mercadolivro.model.CustomerModel
+import com.mercadolivro.mercadolivro.repository.CustomerRepository
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 
 @Service //informando que essa classe é um serviço ao spring
-class CustomerService {
+class CustomerService(
+        private val customerRepository: CustomerRepository,
+        private val bookService: BookService,
+        private val bCrypt: BCryptPasswordEncoder
+        ) {
 
     val customers = mutableListOf<CustomerModel>()
 
     //inserindo um requestParam que eh opcional (por isso o ?)
     fun getAll(name: String?): List<CustomerModel> {
-        //so fazemos essa busca se o nome for diferente de null
-
-        //ou seja: se enviamos o requestparam para buscar por nome
-        //o codigo vai permitir que iteremos a lista e verifiquemos se
-        //em cada nome contem o valor buscado, se contiver, a gente retorna eles
-        //em uma lista, por isso o tipo de retorno da fun eh uma lista
         name?.let {
-            return customers.filter {
-                it.name.contains(name, true)
-            }
+            return customerRepository.findByNameContaining(name);
         }
 
-        //se o parametro estiver nulo, retornamos todos da lista
-        return customers
+        return customerRepository.findAll()
     }
 
 
     fun create(customer: CustomerModel){
+        val customerCopy = customer.copy(
+            roles = setOf(Role.CUSTOMER),
+            password = bCrypt.encode(customer.password)
+        )
+        customerRepository.save(customerCopy)
 
-        var id = if(customers.isEmpty()){
-            1
-        }else{
-            customers.last().id?.toInt()?.plus(1)
-        }.toString()
-
-        customer.id = id
-
-        customers.add(  customer  )
     }
 
 
-    fun getCustomer(id: String): CustomerModel{
-
-        //se o registro tiver um id igual ao id que peguei da url
-        //entao o filter retorna aquele registro
-        //além disso, quero q ele retorne o primeiro que for achado
-        return customers.filter { it.id == id }.first()
+    fun getById(id: Int): CustomerModel{
+        return customerRepository.findById(id).orElseThrow{
+            NotFoundException(Errors.ML201.message.format(id), Errors.ML201.code)
+        }
     }
 
 
     //faz update de todos os campos atualizaveis pelo id
     fun update(customer: CustomerModel){
 
-        customers.filter { it.id == customer.id }.first().let {
-            it.name = customer.name
-            it.email = customer.email
+        if (! customerRepository.existsById(customer.id!!)){
+            throw NotFoundException(Errors.ML201.message.format(customer.id), Errors.ML201.code)
         }
+
+        customerRepository.save(customer)
     }
 
 
     //deleta
-    fun delete(id: String) {
+    fun delete(id: Int) {
 
-        //removo se o id do registro for igual ao que eu enviei pela url
-        customers.removeIf { it.id == id }
+        val customer = getById(id)
+
+        bookService.deleteByCustomer(customer)
+
+        customer.status = CustomerStatus.INATIVO
+
+        customerRepository.save(customer)
+    }
+
+
+    //verificando se o email que passamos para o customer já existe no banco
+    //retornamos true se ele não existir, aí estará disponível
+    fun emailAvailable(email: String): Boolean {
+        return !customerRepository.existsByEmail(email)
     }
 
 }

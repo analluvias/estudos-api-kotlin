@@ -2,54 +2,61 @@ package com.mercadolivro.mercadolivro.controller
 
 import com.mercadolivro.mercadolivro.controller.request.PostCustomerRequest
 import com.mercadolivro.mercadolivro.controller.request.PutCustomerRequest
+import com.mercadolivro.mercadolivro.controller.response.CustomerResponse
 import com.mercadolivro.mercadolivro.extension.toCustomerModel
-import com.mercadolivro.mercadolivro.model.CustomerModel
+import com.mercadolivro.mercadolivro.extension.toResponse
+import com.mercadolivro.mercadolivro.security.UserCanOnlyAccessTheirOwnResource
 import com.mercadolivro.mercadolivro.service.CustomerService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
+import javax.validation.Valid
 
 @RestController //informando que a classe é um controller
 @RequestMapping("/customers")//caminho de todo esse controller
 class CustomerController(
         @Autowired
-        val customerService : CustomerService
+        private val customerService : CustomerService
 ) {
 
 
     @GetMapping()
     //chamando o service
-    fun getAll(@RequestParam name: String?): List<CustomerModel> {
-        return customerService.getAll(name)
+    fun getAll(@RequestParam name: String?): List<CustomerResponse> {
+        return customerService.getAll(name).map { it.toResponse() }
     }
 
     //chamando o service
     @PostMapping //caminho na raiz
     @ResponseStatus(HttpStatus.CREATED) //status de criado
-    fun create(@RequestBody customer: PostCustomerRequest){
+    fun create(@RequestBody @Valid customer: PostCustomerRequest){
         customerService.create(  customer.toCustomerModel()  )
     }
 
 
     @GetMapping("/{id}")
-    fun getCustomer(@PathVariable("id") id: String): CustomerModel{
+    @UserCanOnlyAccessTheirOwnResource
+    fun getCustomer(@PathVariable("id") id: Int): CustomerResponse{
 
-        return customerService.getCustomer(id)
+        return customerService.getById(id).toResponse()
     }
 
     //atualiza todos os campos atualizaveis do customer
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT) // FEITO COM SUCESSO, MAS NÃO RETORNA NADA
-    fun update(@PathVariable("id") id: String,
-               @RequestBody customer: PutCustomerRequest){
+    fun update(@PathVariable("id")id: Int,
+               @RequestBody @Valid customer: PutCustomerRequest){
 
-        customerService.update(customer.toCustomerModel(id))
+        val customerSaved = customerService.getById(id)
+
+        customerService.update(customer.toCustomerModel(customerSaved))
     }
 
     //deleta
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT) // FEITO COM SUCESSO, MAS NÃO RETORNA NADA
-    fun delete(@PathVariable("id") id: String) {
+    fun delete(@PathVariable("id") id: Int) {
 
         customerService.delete(id)
     }
